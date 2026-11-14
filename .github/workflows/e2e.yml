@@ -62,26 +62,23 @@ jobs:
           done
           echo "::error::no browser found — set GHOST_HOURS_BROWSER"; exit 1
 
-      # A manual run tests the branch: build it and serve it locally.
-      - name: Build and serve (manual run only)
-        if: github.event_name == 'workflow_dispatch'
-        shell: bash
-        run: |
-          source .github/ci/toolchain.sh
-          pnpm build
-          nohup pnpm --filter @ghost-hours/web preview --port 4173 > /tmp/gh-preview.log 2>&1 &
-          timeout 90 bash -c 'until curl -sf -o /dev/null http://localhost:4173/ghost-hours/; do sleep 2; done'
-
+      # A manual run tests the branch. It no longer builds and serves by hand:
+      # `pnpm e2e` brings up its own preview (e2e/playwright.config.ts), and the
+      # old `pkill -f "vite preview"` never matched anything — the process is
+      # `vite.js preview`, so the stop step was a no-op and a crashed run left
+      # its server listening for the next one, which then tested a stale bundle.
+      # The port is freed here and reuse is refused, so a leftover fails loudly.
       - name: Smoke suite
         shell: bash
         run: |
           source .github/ci/toolchain.sh
-          pnpm e2e
-
-      - name: Stop the preview
-        if: always() && github.event_name == 'workflow_dispatch'
-        shell: bash
-        run: pkill -f "vite preview" || true
+          leftovers=$(ss -ltnp 2>/dev/null | awk '/:4173 /' | grep -oP 'pid=\K[0-9]+' | sort -u)
+          if [ -n "$leftovers" ]; then
+            echo "freeing port 4173 from: $leftovers"
+            kill $leftovers
+            sleep 2
+          fi
+          GHOST_HOURS_REUSE_SERVER=0 pnpm e2e
 
       - uses: actions/upload-artifact@v4
         if: always()

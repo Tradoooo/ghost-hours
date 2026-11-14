@@ -57,6 +57,29 @@ const asked =
 
 const selected = new Set<string>(asked);
 
+/**
+ * The suite serves itself, so `pnpm e2e` is one command.
+ *
+ * Before this, a bare `pnpm e2e` died on `net::ERR_CONNECTION_REFUSED`: the
+ * preview had to be started by hand, a step written in `e2e/README.md` and in
+ * no script, so the documented one-command chain stopped at the build and never
+ * reached a browser. The rule now is: a target on localhost gets a server, and
+ * the build runs first, because testing a stale `dist` would prove nothing.
+ * A remote target (the public site) starts nothing — there is nothing to serve.
+ *
+ * `GHOST_HOURS_REUSE_SERVER=0` turns "a server is already listening" into a
+ * failure instead of a silent reuse. CI sets it: on a self-hosted runner a
+ * preview left behind by a crashed run would otherwise serve the previous
+ * bundle, and the suite would go green on code that is not on disk.
+ */
+const TARGET = new URL(
+  process.env.GHOST_HOURS_URL ?? 'http://localhost:4173/ghost-hours/',
+);
+const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
+const PORT = TARGET.port === '' ? '4173' : TARGET.port;
+const SERVES_LOCALLY = LOCAL_HOSTS.includes(TARGET.hostname);
+const REUSE_EXISTING = process.env.GHOST_HOURS_REUSE_SERVER !== '0';
+
 /** The desktop suites: the fictitious month and the real one, 1440×900. */
 const DESKTOP = { testMatch: /(smoke|real-month|hostile)\.spec\.ts/ } as const;
 
@@ -122,8 +145,21 @@ export default defineConfig({
   retries: 1,
   reporter: [['list']],
   outputDir: 'artifacts',
+  // An already-listening server is reused only when the caller allows it (see
+  // GHOST_HOURS_REUSE_SERVER). The build runs first whenever we start it, so a
+  // server we bring up cannot serve a stale bundle.
+  webServer: SERVES_LOCALLY
+    ? {
+        command: `pnpm --filter @ghost-hours/web build && pnpm --filter @ghost-hours/web preview --port ${PORT}`,
+        url: TARGET.href,
+        reuseExistingServer: REUSE_EXISTING,
+        timeout: 180_000,
+        stdout: 'ignore',
+        stderr: 'pipe',
+      }
+    : undefined,
   use: {
-    baseURL: process.env.GHOST_HOURS_URL ?? 'http://localhost:4173',
+    baseURL: TARGET.href,
     locale: 'en-GB',
     // Video needs Playwright's own ffmpeg, which the CI server does not have
     // and which we refuse to download at every run. Traces and screenshots

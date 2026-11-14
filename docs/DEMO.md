@@ -18,8 +18,17 @@ pnpm demo
 |---|---|---|
 | **fixture** | recomputes `fixtures/real-month/expected.json` from the evidence, through the real mapping + sessionizer | `fixtures/real-month/regenerate.mjs` |
 | **anchor** | hashes the day's proofs into a chained ledger and verifies it | `scripts/anchor-evidence.mjs` |
-| **check** | unit tests (577) + typecheck + lint | `pnpm test` |
+| **check** | unit tests + typecheck + lint | `pnpm test` |
 | **build** | the static site in `apps/web/dist` | `pnpm build` |
+| **browser** | the built site in a real browser: it boots, the month's figures reach the screen, nothing leaves the page | `pnpm e2e`, served by the suite itself |
+
+The test count is not written here on purpose: it changes with the specs, and a number copied into
+a doc is a number that goes stale. `pnpm test` prints the truth.
+
+The **browser** step needs a system browser (`google-chrome`, `chromium`, or
+`GHOST_HOURS_BROWSER`). Without one it reports `skipped` and `pnpm demo` exits **3**: a check that
+did not run is not a check that passed. It used to stop at the build, which is how a desktop CSS
+bug shipped green — see `docs/BROWSERS.md`.
 
 The demo month ships **already collected, anonymised and anchored**, so a fresh machine never needs
 the author's repositories, a real clock or a network connection.
