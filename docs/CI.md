@@ -67,3 +67,31 @@ Two agents work on the queue, both triggered by the sweeper:
   anything and always stays green, so it cannot add a red check on top of a red one.
 
 Both are observability-first: they comment what they did, and a merge always requires green checks.
+
+## A step that cannot say "nothing to clean"
+
+Every `run:` block in this repository executes under `bash -e -o pipefail` — GitHub's default, not a
+setting we chose. A pipeline whose last command legitimately finds nothing returns 1, so an
+assignment like this kills the step in one second, with no output at all:
+
+```bash
+leftovers=$(ss -ltnp | awk '/:4173 /' | grep -oP 'pid=\K[0-9]+' | sort -u)   # dies when empty
+```
+
+That is how `e2e (browser smoke)` went red on 2026-11-14 at 14:22, on a run whose product code was
+fine: the cleanup probe found no leftover server, `grep` returned 1, `pipefail` propagated it to the
+assignment, and `set -e` ended the step before Playwright ever started. The fix is a trailing
+`|| true` on the pipeline (which `set -e` cannot read through), and the same for any `kill` of a
+process that may already be gone.
+
+The rule: **a cleanup must be able to report "there was nothing to clean"**. Reproduce it locally
+without waiting for a runner — extract the script by **name** (indexes rot) and run it exactly as
+GitHub does:
+
+```bash
+python3 -c 'import yaml
+steps = yaml.safe_load(open(".github/workflows/e2e.yml"))["jobs"]["e2e"]["steps"]
+print(next(s["run"] for s in steps if s.get("name") == "Smoke suite"))' > /tmp/step.sh
+bash --noprofile --norc -e -o pipefail /tmp/step.sh
+```
+

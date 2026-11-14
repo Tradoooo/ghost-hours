@@ -68,14 +68,21 @@ jobs:
       # `vite.js preview`, so the stop step was a no-op and a crashed run left
       # its server listening for the next one, which then tested a stale bundle.
       # The port is freed here and reuse is refused, so a leftover fails loudly.
+      #
+      # Every probe below is tolerant of finding nothing: the step runs under
+      # `bash -e -o pipefail` (GitHub's default), and a pipeline whose `grep`
+      # matches nothing returns 1, which killed the very first run of this step
+      # in one second with no output at all. A cleanup that cannot say "there
+      # was nothing to clean" is not a cleanup.
       - name: Smoke suite
         shell: bash
         run: |
           source .github/ci/toolchain.sh
-          leftovers=$(ss -ltnp 2>/dev/null | awk '/:4173 /' | grep -oP 'pid=\K[0-9]+' | sort -u)
-          if [ -n "$leftovers" ]; then
-            echo "freeing port 4173 from: $leftovers"
-            kill $leftovers
+          pkill -f 'vite[.]js preview' || true
+          leftovers=$(ss -ltnp 2>/dev/null | awk '/:4173 /' | grep -oP 'pid=\K[0-9]+' | sort -u || true)
+          if [ -n "${leftovers:-}" ]; then
+            echo "freeing port 4173 from pids: $leftovers"
+            kill $leftovers || true
             sleep 2
           fi
           GHOST_HOURS_REUSE_SERVER=0 pnpm e2e
