@@ -58,8 +58,12 @@ the command has been run and is green.
       `grep -n 'Date\|timeZone' packages/intervals/src/*.ts` returns nothing (except in comments).
       Verify: the grep output pasted in the task notes.
 - [ ] 6.2 `pnpm vitest run packages/intervals && pnpm lint && pnpm typecheck` green.
-- [ ] 6.3 Record in `KIRO_JOURNAL.md` the "spec vs vibe coding" comparison for `normalize`
-      (duration both ways, round trips, defects found). Until measured: `TODO(measure)`.
+- [x] 6.3 Record in `KIRO_JOURNAL.md` the "spec vs vibe coding" comparison for `normalize`
+      (duration both ways, round trips, defects found). Done on 2026-11-14: journal §4 and
+      `fixtures/vibe-lab/` (three runs, six artefacts, the ruler in
+      `packages/intervals/src/properties.ts`). One round trip per path; the wall-clock and the
+      token counts overlap between the paths and discriminate nothing; the defects do —
+      0/6 failed for the spec path, 2/6 for the vibe path, three runs out of three.
 
 ## 7. Integration points
 

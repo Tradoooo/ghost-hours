@@ -7,7 +7,9 @@ a file path or a command behind it does not belong here.
 **Reading rule.** Anything marked `TODO(measure)` has not been measured yet and must not be quoted in
 the video, the Devpost text or the README until it is. The only numbers allowed in submission
 material today are the ones the sample dataset produces (104 h found, 92 h declared, 12 ghost hours,
-≈€780) — and those come from the fixture, not from this journal.
+≈€780) — and those come from the fixture, not from this journal. The one exception is the
+laboratory of §4: it quotes its own measurements — tokens, seconds, properties — with their method,
+their date and their limits, and those numbers describe the *tooling*, never the product.
 
 ---
 
@@ -18,10 +20,10 @@ material today are the ones the sample dataset produces (104 h found, 92 h decla
 | **Which Kiro surfaces, and how do they differ?** | Specs for every domain lot (requirements → design → tasks), steering as the durable memory of the rules, hooks as the enforcement while coding, custom agents as read-only reviewers, skills as the two repeated procedures. Differences are noted per entry below: specs structure the thinking, hooks catch what specs cannot enforce, agents re-read what the author stops seeing. | `.kiro/specs/*/`, `.kiro/steering/*.md`, `.kiro/hooks/*.json`, `.kiro/agents/*.md`, `.kiro/skills/*/SKILL.md` |
 | **Custom agents?** | Three: `time-reviewer` (read-only, dates and zones), `prudence-reviewer` (read-only, nothing inflated), `property-tester` (may run `pnpm *` to reproduce and shrink a counterexample). Their effect: `TODO(measure)` — no review has been run through them yet. | `.kiro/agents/time-reviewer.md`, `prudence-reviewer.md`, `property-tester.md` |
 | **Which hooks, what gain?** | Five hook files, six hook actions: `interval-properties` (runs the property suites on save in `intervals`/`sessionizer`), `fixture-privacy-guard` (no non-fictional domain may land), `no-network` (no `fetch`/XHR/CDN in `packages` or `apps`), `journal-reminder` (one `agent` action after a spec task, plus a `Stop` command reminder), `kiro-folder-guard` (`PreToolUse`, refuses a write that would gitignore `.kiro`). Trigger counts: `TODO(measure)` — hooks fire only inside a real Kiro session. | `.kiro/hooks/` |
-| **Spec against "vibe coding"?** | The comparison function is chosen: `normalize()` in `packages/intervals` — twenty lines of "sort, merge, done" that is wrong in three ways only a property test finds. Numbers (duration both ways, round trips, defects found): `TODO(measure)`. The procedure and the three expected defects are written in `.kiro/specs/intervals/design.md` §8. | `.kiro/specs/intervals/` |
+| **Spec against "vibe coding"?** | The comparison function is chosen: `normalize()` in `packages/intervals` — twenty lines of "sort, merge, done" that is wrong in three ways only a property test finds. The procedure was written before the run (`.kiro/specs/intervals/design.md` §8) and it is now measured: the same model, the same day, one prompt with the specification and one without. **Only the defects discriminate**: two properties separate the paths — the code written from the plain prompt lets an empty and an inverted range survive, 3 samples out of 3; the code written from the specification passes the whole contract, 3 out of 3. The wall-clock says nothing (the same vibe prompt took 132 s, then 5 s, then 25 s) and **the tokens say nothing either** (run 3 inverted them: 4 102 reasoning tokens for vibe against 1 031 for spec — an earlier draft of this journal claimed the opposite, and the claim is withdrawn). Measured on 2026-11-14 outside a Kiro session, with the method, the prompts and the counterexamples in `fixtures/vibe-lab/`. | `.kiro/specs/intervals/`, `fixtures/vibe-lab/` |
 | **Which steering made the difference?** | `time.md` and `prudence.md`, because they forbid the two shortcuts an assistant reaches for by default: arithmetic on local time, and a block quietly widened to a round hour. Before/after example: `TODO(measure)` — needs a real transcript to quote. The rules themselves are quotable today. | `.kiro/steering/time.md`, `prudence.md` |
 | **What did MCP enable?** | Nothing yet. No MCP server is declared for this project; `.kiro/settings/mcp.json` does not exist. Honest answer for the form: MCP was not used, and the offline constraint made a documentation server the only plausible candidate. | — |
-| **Did property tests find defects?** | Fourteen properties are specified and owned (`HEU-P-01` … `HEU-P-14`). Counterexamples found so far: `TODO(measure)` — none recorded, because no property has been run yet in a Kiro session. The journal section below is where each one will be written, with its seed and its shrunk case. | `.kiro/specs/*/design.md` §7 |
+| **Did property tests find defects?** | Fourteen properties are specified and owned (`HEU-P-01` … `HEU-P-14`). Counterexamples found so far: the empty range and the inverted range that the vibe path leaves in its output — found in 3 samples out of 3, in two different modes (kept, or kept-then-thrown) (§4). `TODO(measure)`: the counterexamples a Kiro session will find on the specs themselves, because none has been run in one yet. | `.kiro/specs/*/design.md` §7, `fixtures/vibe-lab/` |
 | **Which powers?** | None installed. The two repeated procedures of this project became **skills** instead (`sample-month`, `property-hunt`), because they are project-specific and a power would have been a wrapper around a skill. | `.kiro/skills/` |
 
 ---
@@ -121,22 +123,55 @@ evidence produced, and a measurement when one exists.
   and returns exit 2 with `--block`. (Writing those literals in this journal was itself caught by
   the guard — which is the point.)
 
+### 2026-11-14 — the `spec vs vibe coding` laboratory (measured outside Kiro)
+
+- **Surface**: none — that is the point. The comparison is between two answers of the same model,
+  measured by a property suite that already existed.
+- **Decision**: run the protocol of §4 as it was written, and repeat it with the order of the two
+  calls reversed, then a third time after the second run showed the tokens contradicting the
+  first one. Rejected alternative: quote a single run, which would have made the wall-clock
+  look like a result of the path instead of a result of the provider's queue.
+- **Evidence**: `fixtures/vibe-lab/` — the two prompts, the six artefacts, the ruler
+  (`packages/intervals/src/properties.ts`), the numbers and the counterexamples.
+- **Measured**: the spec path passes the six-property contract 3/3; the vibe path fails the two
+  properties of criterion 3 3/3, with the shrunk cases `[{ start: 0, end: 0 }]` and
+  `[{ start: 0, end: -1 }]`. One round trip each. Wall-clock 31.84–218.70 s against 4.95–132.41 s,
+  and reasoning tokens 1 031–9 497 against 515–4 102 — both say nothing: the ranges of the two
+  paths overlap, and the third run inverted the token order. **Only the defects separate the
+  paths.**
+- **What stayed open**: the measurements that only a Kiro session can produce (the IDE/CLI/Web
+  split, the hook trigger counts, the effect of the three custom agents). They remain
+  `TODO(measure)`, and this entry does not pretend to cover them.
+
 ---
 
 ## 3. Property counterexamples
 
-Each line here must be real: a property id, the seed, the shrunk case, the fix. Nothing yet.
+Each line here must be real: a property id, the seed, the shrunk case, the fix.
 
 ```
-(none yet — no property has been run in a Kiro session; see TODO(measure) above)
+- HEU-P-01.c3.empty-piece, seed 20261114 — `[{ start: 0, end: 0 }]` gave a result that still
+  contains the empty range; cause: the plain prompt never says that an empty range is dropped,
+  and the artefact assumes the input is well formed ("assumes each range has start <= end");
+  fixed by the specification's criterion 3, the filter `end > start`; the regression test is kept
+  at `packages/intervals/src/properties.ts` (`everyPieceIsNonEmpty`).
+- HEU-P-01.c3.inverted-dropped, seed 20261114 — `[{ start: 0, end: -1 }]` gave a result that still
+  contains the inverted range; cause: same as above — the inverted range is exactly the case
+  criterion 3 names; fixed by the specification's criterion 3; the regression test is kept at
+  `packages/intervals/src/properties.ts` (`invertedRangesAreDropped`).
 ```
 
-Format to use when the first one lands:
+Both were found on the **vibe** artefacts of the laboratory, in three samples out of three, and
+neither of them would have been found by the property suite before it was widened: the generator
+of the specification could not produce a malformed range, so criterion 3 was written but not
+testable (§4, and `fixtures/vibe-lab/README.md` §7). The shipped implementation passes both.
 
-```
-- HEU-P-08, seed 20261108 — <the shrunk case> gave <wrong result>; cause: <one sentence>;
-  fixed in <file:line>; regression test kept at <file:line>.
-```
+One sample fails in a third mode: `path-b-vibe-3` drops the empty range correctly and throws
+`RangeError` on the inverted one. The criterion is the same, the symptom is not, and the ruler
+probes the behaviour so that the journal can say which.
+
+Still open, and not covered by those two lines: the counterexamples a Kiro session will find on
+the specs themselves — `TODO(measure)`.
 
 ## 4. Spec against "vibe coding" — the protocol
 
@@ -153,7 +188,55 @@ Written before measuring, so the measurement cannot be chosen after the fact.
 - **Expected outcome, stated in advance**: path B fails on (1) touching ranges that are not merged,
   (2) an inverted range surviving, (3) a `difference`-style merge that loses a range. If it does not
   fail, the honest journal entry says so.
-- **Numbers**: `TODO(measure)`.
+- **Numbers**: measured on 2026-11-14, outside a Kiro session — see below.
+
+### The measurement (2026-11-14)
+
+Model `combo/cheap` (InferHub), temperature 0, three runs in alternating orders, because the
+first call of a pair is systematically the slow one. The prompts, the artefacts and the ruler
+are in `fixtures/vibe-lab/`.
+
+| run | order | path | wall-clock | completion tokens | of which reasoning | round trips | properties failed |
+|---|---|---|---|---|---|---|---|
+| 1 | B → A | B (vibe) | 132.41 s | 995 | 730 | 1 | 2 / 6 |
+| 1 | B → A | A (spec) | 31.84 s | 5 218 | 4 573 | 1 | 0 / 6 |
+| 2 | A → B | A (spec) | 86.08 s | 10 415 | 9 497 | 1 | 0 / 6 |
+| 2 | A → B | B (vibe) | 4.95 s | 803 | 515 | 1 | 2 / 6 |
+| 3 | B → A | B (vibe) | 24.51 s | 4 507 | 4 102 | 1 | 2 / 6 |
+| 3 | B → A | A (spec) | 218.70 s | 2 242 | 1 031 | 1 | 0 / 6 |
+
+**The wall-clock is not a result.** The same vibe prompt took 132.41 s, then 4.95 s, then
+24.51 s. The latency belongs to the provider's queue.
+
+**The tokens are not a result either.** The third run inverted the order — 4 102 reasoning tokens
+for the vibe answer against 1 031 for the spec answer — and over three runs the two paths' token
+ranges overlap (spec 1 031–9 497, vibe 515–4 102). An earlier draft of this journal claimed the
+tokens were the discriminator; the third run refuted it and the claim is withdrawn, not softened.
+
+**Only the defects discriminate.** Their distributions do not overlap: 0 / 6 failures for the
+spec path, 2 / 6 for the vibe path, three times out of three. Everything else measured — the
+seconds, the tokens, the round trips (1 for both paths, every run) — is noise a reader could
+mistake for a result.
+
+**The failures are the same criterion, not always the same mode.** All three vibe artefacts fail
+the two properties of criterion 3 (*a malformed range must not survive*) and pass the other four.
+But the third artefact drops the empty range correctly and throws `RangeError` on an inverted one
+instead of keeping it. The ruler therefore probes the behaviour, not only the property, and the
+counterexample says *how* the code fails, not just *that* it fails.
+
+**Against the prediction.** (1) *touching ranges not merged*: **not observed** — the model wrote
+`range.start <= previous.end`, so touching ranges are merged. (2) *an inverted range surviving*:
+**observed**, in two samples out of three; the third throws on it. (3) *a `difference`-style merge
+that loses a range*: **not observed**. One failure was **not predicted**: an empty range
+(`end === start`) survives, because the plain prompt never mentions dropping one and the artefact
+assumes the input is well formed.
+
+**What the comparison was really about.** The specification's own generator drew
+`end = start + len` with `len >= 0`, so criterion 3 — *drop the empty and the inverted ranges* —
+was written but **untestable**: the property suite could not have caught either defect, on
+either path. Widening the generator turned the criterion into a detector, and the detector
+separated the two paths on the first run. A specification nobody can test is a wish; the generator
+is what makes it a rule.
 
 ## 5. What did not work (kept honest on purpose)
 

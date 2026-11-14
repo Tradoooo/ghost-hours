@@ -23,6 +23,39 @@ export const nonEmptyIntervalsArb: fc.Arbitrary<Interval[]> = fc.array(nonEmptyI
   maxLength: 20,
 });
 
+/** A range whose bounds are arbitrary: valid, empty (`end === start`) or inverted. */
+export const malformedIntervalArb: fc.Arbitrary<Interval> = fc.oneof(
+  {
+    weight: 2,
+    arbitrary: fc
+      .record({ start: instantArb, length: fc.integer({ min: 0, max: 1_000 }) })
+      .map(({ start, length }) => ({ start, end: start + length })),
+  },
+  {
+    weight: 1,
+    arbitrary: fc
+      .record({ start: instantArb, length: fc.integer({ min: 1, max: 1_000 }) })
+      .map(({ start, length }) => ({ start, end: start - length })),
+  },
+  {
+    weight: 1,
+    arbitrary: fc.record({ start: instantArb }).map(({ start }) => ({ start, end: start })),
+  },
+);
+
+/** Ranges whose bounds are always inverted (`end < start`): the case criterion 3 names. */
+export const invertedIntervalsArb: fc.Arbitrary<Interval[]> = fc.array(
+  fc.record({ start: instantArb, length: fc.integer({ min: 1, max: 1_000 }) }).map(
+    ({ start, length }) => ({ start, end: start - length }),
+  ),
+  { maxLength: 6 },
+);
+
+/** Short arrays of malformed ranges, so that a shrunk counterexample stays readable. */
+export const malformedIntervalsArb: fc.Arbitrary<Interval[]> = fc.array(malformedIntervalArb, {
+  maxLength: 6,
+});
+
 /** Deterministic Fisher-Yates shuffle driven by a 32-bit LCG (no Math.random). */
 export function shuffleWith<T>(values: readonly T[], seed: number): T[] {
   const copy = [...values];

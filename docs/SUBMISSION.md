@@ -84,10 +84,15 @@ Invoice
    names the requirement it breaks.
 2. **Surfaces.** Specs, steering, hooks, agents and skills live in `.kiro/` and are part of the
    product, not scaffolding. `TODO(measure)`: the split between IDE, CLI and Web sessions.
-3. **Specs vs vibe coding.** `TODO(measure)`: the timed comparison on `intervals.union`. What is
-   already true and written in `KIRO_JOURNAL.md`: the property tests found three defects that unit
+3. **Specs vs vibe coding.** Measured on 2026-11-14, outside a Kiro session: the same model, the
+   same day, one prompt with the specification and one without, three runs each
+   (`fixtures/vibe-lab/`, journal §4). The comparison function is `intervals.normalize`. **Only the
+   defects discriminate** — the spec path passes the six-property contract 3/3, the plain-prompt
+   path fails the two properties of criterion 3 3/3; the wall-clock and the token counts overlap
+   between the paths and are provider noise. The property tests also found three defects that unit
    tests missed (a session trimmed by its own client's meeting, a conflict absorbed by a merge, a
-   proven share that counted the night between two days).
+   proven share that counted the night between two days). `TODO(measure)`: the part of the
+   comparison that needs a real Kiro session.
 4. **Steering.** `time.md` (fileMatch on the time-sensitive packages) is the file that changed
    answers the most: it forbids `getFullYear()`-style local reads and names the helper to use
    instead. Before/after example in the journal.
