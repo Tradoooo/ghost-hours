@@ -15,16 +15,24 @@ Spec: [`.kiro/specs/e2e-smoke/`](../.kiro/specs/e2e-smoke).
 
 ```bash
 pnpm install
-pnpm build
-pnpm --filter @ghost-hours/web preview --port 4173 &
-GHOST_HOURS_URL=http://localhost:4173/ghost-hours/ pnpm e2e
+pnpm e2e
 ```
 
-Against the public site instead:
+That is the whole procedure: the suite builds the app, starts its own preview on
+port 4173, runs against it, and shuts the server down. Nothing has to be started
+by hand — a bare `pnpm e2e` used to die on `net::ERR_CONNECTION_REFUSED`, which
+is why the old three-line recipe below lived in this file and in no script.
+
+Against the public site instead (no server is started for a remote target):
 
 ```bash
 GHOST_HOURS_URL=https://tradoooo.github.io/ghost-hours/ pnpm e2e
 ```
+
+If a server is already listening on the port, it is reused — unless
+`GHOST_HOURS_REUSE_SERVER=0`, which turns a leftover server into a failure. CI
+sets that variable: on a self-hosted runner, reusing a preview left behind by a
+crashed run means testing a bundle that is not on disk, and going green on it.
 
 The browser is the system one: `GHOST_HOURS_BROWSER` if set, otherwise the
 first of `/usr/bin/google-chrome`, `/usr/bin/google-chrome-stable`,
