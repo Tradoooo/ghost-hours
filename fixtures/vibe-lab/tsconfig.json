@@ -1,0 +1,8 @@
+{
+  "//": "The laboratory has its own compiler settings, on purpose. The artefacts are the verbatim answer of the model: they are measurements, and a measurement that is edited to please the compiler is no longer a measurement. `noUncheckedIndexedAccess` is the only flag relaxed — the ruler of this folder is the property suite, not `tsc`.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noUncheckedIndexedAccess": false
+  },
+  "include": ["**/*.ts"]
+}

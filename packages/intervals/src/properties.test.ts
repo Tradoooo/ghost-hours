@@ -16,21 +16,15 @@ import {
   union,
 } from './index.ts';
 import type { Interval } from './index.ts';
+import { RUNS, contract } from './properties.ts';
 import {
   MAX_INSTANT,
   intervalArb,
   intervalsArb,
   nonEmptyIntervalArb,
   nonEmptyIntervalsArb,
-  shuffleWith,
 } from './test-support.ts';
 
-const RUNS = { numRuns: 200 } as const;
-
-const sameSet = (a: readonly Interval[], b: readonly Interval[]): boolean =>
-  JSON.stringify(union(a)) === JSON.stringify(union(b));
-
-/** Reference equality skips the self-pair when `a` and `b` are the same array. */
 const anyOverlap = (a: readonly Interval[], b: readonly Interval[]): boolean =>
   a.some((left) => b.some((right) => left !== right && overlaps(left, right)));
 
@@ -38,54 +32,21 @@ const containerArb = fc
   .tuple(fc.integer({ min: 0, max: MAX_INSTANT }), fc.integer({ min: 1, max: MAX_INSTANT }))
   .map(([start, length]) => ({ start, end: start + length }));
 
-describe('HEU-P-01 basis: union() output never overlaps', () => {
-  it('HEU-P-01 basis: union() output never overlaps', () => {
-    fc.assert(
-      fc.property(intervalsArb, (xs) => {
-        const merged = union(xs);
-        expect(findOverlaps(merged)).toEqual([]);
-        expect(anyOverlap(merged, merged)).toBe(false);
-      }),
-      RUNS,
-    );
-  });
+describe('the normalising sweep honours its contract', () => {
+  for (const { id, property } of contract(union)) {
+    it(id, () => {
+      fc.assert(property, RUNS);
+    });
+  }
 });
 
-describe('HEU-P-02 basis: union duration', () => {
-  it('HEU-P-02 basis: totalDurationMs(xs) === duration of union(xs)', () => {
-    fc.assert(
-      fc.property(intervalsArb, (xs) => {
-        const summed = union(xs).reduce((total, interval) => total + durationMs(interval), 0);
-        expect(totalDurationMs(xs)).toBe(summed);
-        expect(totalDurationMs(xs)).toBeLessThanOrEqual(
-          xs.reduce((total, interval) => total + durationMs(interval), 0),
-        );
-      }),
-      RUNS,
-    );
-  });
-
+describe('HEU-P-02 basis: covered time never exceeds the container', () => {
   it('HEU-P-02 basis: covered time never exceeds the container', () => {
     fc.assert(
       fc.property(containerArb, intervalsArb, (container, xs) => {
         const covered = intersectSets([container], xs);
         expect(totalDurationMs(covered)).toBeLessThanOrEqual(durationMs(container));
         expect(coverageRatio(xs, container)).toBeLessThanOrEqual(1);
-      }),
-      RUNS,
-    );
-  });
-});
-
-describe('HEU-P-03 basis: order independence', () => {
-  it('HEU-P-03 basis: order independence', () => {
-    fc.assert(
-      fc.property(intervalsArb, fc.integer({ min: 1, max: 100_000 }), (xs, seed) => {
-        expect(union(shuffleWith(xs, seed))).toEqual(union(xs));
-        expect(totalDurationMs(shuffleWith(xs, seed))).toBe(totalDurationMs(xs));
-        expect(JSON.stringify(union(shuffleWith([...xs].reverse(), seed)))).toBe(
-          JSON.stringify(union(xs)),
-        );
       }),
       RUNS,
     );
@@ -107,36 +68,6 @@ describe('HEU-P-04 basis: monotonicity', () => {
   });
 });
 
-describe('union laws', () => {
-  it('is idempotent, commutative and associative', () => {
-    fc.assert(
-      fc.property(intervalsArb, intervalsArb, intervalsArb, (a, b, c) => {
-        expect(union(union(a))).toEqual(union(a));
-        expect(sameSet(union([...a, ...b]), union([...b, ...a]))).toBe(true);
-        expect(sameSet(union([...a, ...b, ...c]), union([...union(a), ...union(b), ...union(c)]))).toBe(
-          true,
-        );
-      }),
-      RUNS,
-    );
-  });
-
-  it('returns a sorted, strictly disjoint set', () => {
-    fc.assert(
-      fc.property(intervalsArb, (xs) => {
-        const merged = union(xs);
-        for (let index = 1; index < merged.length; index += 1) {
-          const previous = merged[index - 1];
-          const current = merged[index];
-          if (previous === undefined || current === undefined) continue;
-          expect(previous.end).toBeLessThan(current.start);
-        }
-      }),
-      RUNS,
-    );
-  });
-});
-
 describe('difference and subtraction', () => {
   it('difference(a, b) plus the intersection covers exactly a', () => {
     fc.assert(
@@ -144,7 +75,7 @@ describe('difference and subtraction', () => {
         const rest = difference(a, b);
         const common = intersection(a, b);
         const rebuilt = common === null ? rest : [...rest, common];
-        expect(sameSet(rebuilt, [a])).toBe(true);
+        expect(JSON.stringify(union(rebuilt))).toBe(JSON.stringify(union([a])));
         expect(totalDurationMs(rebuilt)).toBe(durationMs(a));
         expect(findOverlaps(rebuilt)).toEqual([]);
       }),
@@ -173,7 +104,7 @@ describe('splitAt and gaps', () => {
       fc.property(nonEmptyIntervalArb, fc.array(fc.integer({ min: -50, max: MAX_INSTANT })), (i, points) => {
         const pieces = splitAt(i, points);
         expect(totalDurationMs(pieces)).toBe(durationMs(i));
-        expect(sameSet(pieces, [i])).toBe(true);
+        expect(JSON.stringify(union(pieces))).toBe(JSON.stringify(union([i])));
         expect(findOverlaps(pieces)).toEqual([]);
       }),
       RUNS,

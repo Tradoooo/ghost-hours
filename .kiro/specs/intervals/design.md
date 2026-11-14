@@ -124,14 +124,47 @@ export const arbRanges = fc.array(arbRange, { maxLength: 40 });
 
 Small numbers on purpose: overlaps must happen often, and a failing case must be readable.
 
+**Correction, 2026-11-14.** `arbRange` draws `end = start + len` with `len >= 0`, so it can produce
+an empty range (`end === start`) but **never an inverted one** (`end < start`). Criterion 3 of
+HEU-P-01 — *drop the empty and the inverted ranges* — was therefore written but **untestable**: the
+suite could not have caught either defect. The comparison of §8 proved it: the generator was the
+reason the criterion had never fired, not the reason the code was right.
+
+The generators now cover the malformed cases:
+
+```ts
+export const arbMalformedRange = fc.oneof(
+  fc.tuple(arbInstant, fc.integer({ min: 0, max: 1_000 }))
+    .map(([start, len]) => ({ start, end: start + len })),          // valid or empty
+  fc.tuple(arbInstant, fc.integer({ min: 1, max: 1_000 }))
+    .map(([start, len]) => ({ start, end: start - len })),          // inverted
+  fc.tuple(arbInstant, fc.integer({ min: 0, max: 1_000 }))
+    .map(([start, len]) => ({ start, end: start + len })),          // empty
+);
+export const arbInvertedRanges = fc.array(
+  fc.tuple(arbInstant, fc.integer({ min: 1, max: 1_000 }))
+    .map(([start, len]) => ({ start, end: start - len })),
+  { maxLength: 6 },
+);
+```
+
+Short arrays on purpose: a shrunk counterexample has to stay readable enough to be pasted into a
+journal. The implementation of these generators is in `packages/intervals/src/test-support.ts`.
+
 ## 8. Why this package is the "spec vs vibe coding" case
 
 The cahier (D.13) names `intervals` as the candidate for the comparison, and it is a fair choice:
 the naive implementation ("sort, merge, done") is twenty lines and looks obviously right, and it is
 wrong in three ways that only a property test finds — touching ranges, an inverted range surviving,
 and a `difference` that merges `b` per `a`. The measurement of both paths (duration, round trips,
-defects found) is recorded in `KIRO_JOURNAL.md`; until it is actually run there, the numbers are
-`TODO(measure)`.
+defects found) is recorded in `KIRO_JOURNAL.md` §4.
+
+**Measured on 2026-11-14**, outside a Kiro session, three runs, six artefacts
+(`fixtures/vibe-lab/`). Of the three defects predicted above, **one was observed** (an inverted
+range surviving, in two samples out of three; the third throws on it) and **two were not** (the
+touching ranges are merged, and no range is lost). One defect was **not predicted**: an empty range
+survives. The only metric that separated the two paths was the defects themselves — the wall-clock
+and the token counts overlap between the paths and are provider noise.
 
 ## 9. Boundaries with other packages
 

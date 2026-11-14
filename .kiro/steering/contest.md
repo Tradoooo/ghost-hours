@@ -83,5 +83,12 @@ the Devpost form. It is manual on purpose — it is noise during normal coding.
 | clients | 3 (Acme, Northwind, Globex) | fixture |
 | properties | 14 (`HEU-P-01` … `HEU-P-14`) | cahier D.12 |
 
-Anything else — spec-vs-vibe-coding durations, hook trigger counts, counterexamples found — must be
-measured in a real Kiro session first and is marked `TODO(measure)` in the journal until then.
+Anything else — hook trigger counts, the effect of the three custom agents — must be measured in a
+real Kiro session first and is marked `TODO(measure)` in the journal until then.
+
+**One exception, stated here so the rule stays a rule.** The `spec vs vibe coding` laboratory of
+`KIRO_JOURNAL.md` §4 was measured **outside** a Kiro session, on 2026-11-14, with its method, its
+prompts, its six artefacts and its counterexamples committed in `fixtures/vibe-lab/`. Its numbers
+describe the **tooling**, never the product, and they may be quoted — with the limits they carry
+(three runs, one model, one provider, the wall-clock and the token counts being noise). The
+Kiro-session part of that comparison stays `TODO(measure)`.
