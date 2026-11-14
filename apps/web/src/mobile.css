@@ -65,7 +65,6 @@
   .app-main button {
     min-width: 44px;
   }
-  }
 
   /* The gestures of a block: a glyph is not a target, and 0.62 rem is not a
      label. The grid of the week keeps its compact gestures — a column of the
